@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Personal File Organizer Pro</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(120deg, #1e3a8a, #2563eb, #0ea5e9);
+      background-size: 300% 300%;
+      animation: gradientBG 12s ease infinite;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    header {
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      background: rgba(0,0,0,0.25);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 35px auto;
+      background: rgba(255,255,255,0.92);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      animation: fadeInUp 0.8s ease;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #1e3a8a;
+    }
+
+    .upload-section {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    input[type="file"], input[type="text"] {
+      padding: 10px;
+      flex: 1;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      transition: box-shadow 0.3s, border 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border: 1px solid #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+    }
+
+    button {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(37,99,235,0.4);
+    }
+
+    .search-box { margin-bottom: 15px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #e0e7ff;
+      color: #1e3a8a;
+      font-weight: 600;
+    }
+
+    tr {
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    tr:hover {
+      background: #f1f5ff;
+      transform: scale(1.01);
+    }
+
+    .tag {
+      background: linear-gradient(135deg, #c7d2fe, #93c5fd);
+      color: #1e3a8a;
+      padding: 4px 9px;
+      border-radius: 14px;
+      font-size: 12px;
+      margin-right: 4px;
+      display: inline-block;
+      font-weight: 600;
+    }
+
+    .actions button { margin-right: 6px; }
+    .delete {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+    }
+
+    .note {
+      font-size: 13px;
+      color: #475569;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    footer {
+      text-align: center;
+      color: white;
+      font-size: 13px;
+      padding: 10px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <header>📁 Personal File Organizer Pro</header>
+
+  <div class="container">
+    <h2>Upload & Tag File</h2>
+    <div class="upload-section">
+      <input type="file" id="fileInput" />
+      <input type="text" id="tagInput" placeholder="Enter tags (comma separated)" />
+      <button onclick="addFile()">Add File</button>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="🔍 Search by file name or tag..." onkeyup="renderFiles()" />
+    </div>
+
+    <h2>Your Files</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File Name</th>
+          <th>Size</th>
+          <th>Tags</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="fileTable"></tbody>
+    </table>
+
+    <div class="note">⚠️ Files are stored only in your browser using LocalStorage. Not real cloud storage.</div>
+  </div>
+
+  <footer>© 2026 Personal File Organizer Pro | Built with HTML, CSS & JavaScript</footer>
+
+  <script>
+    let files = JSON.parse(localStorage.getItem('organizedFiles')) || [];
+
+    function addFile() {
+      const fileInput = document.getElementById('fileInput');
+      const tagInput = document.getElementById('tagInput');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert('Please select a file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function () {
+        const newFile = {
+          id: Date.now(),
+          name: file.name,
+          size: file.size,
+          data: reader.result,
+          tags: tagInput.value.split(',').map(t => t.trim()).filter(t => t)
+        };
+
+        files.push(newFile);
+        saveFiles();
+        fileInput.value = '';
+        tagInput.value = '';
+        renderFiles();
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    function saveFiles() {
+      localStorage.setItem('organizedFiles', JSON.stringify(files));
+    }
+
+    function renderFiles() {
+      const tbody = document.getElementById('fileTable');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      tbody.innerHTML = '';
+
+      files
+        .filter(f =>
+          f.name.toLowerCase().includes(search) ||
+          f.tags.join(',').toLowerCase().includes(search)
+        )
+        .forEach(file => {
+          const tr = document.createElement('tr');
+
+          const tagsHTML = file.tags.map(tag => `<span class=\"tag\">${tag}</span>`).join(' ');
+
+          tr.innerHTML = `
+            <td>${file.name}</td>
+            <td>${(file.size / 1024).toFixed(2)} KB</td>
+            <td>${tagsHTML}</td>
+            <td class=\"actions\">
+              <button onclick=\"downloadFile(${file.id})\">Download</button>
+              <button class=\"delete\" onclick=\"deleteFile(${file.id})\">Delete</button>
+            </td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+    }
+
+    function downloadFile(id) {
+      const file = files.find(f => f.id === id);
+      const a = document.createElement('a');
+      a.href = file.data;
+      a.download = file.name;
+      a.click();
+    }
+
+    function deleteFile(id) {
+      if (!confirm('Delete this file?')) return;
+      files = files.filter(f => f.id !== id);
+      saveFiles();
+      renderFiles();
+    }
+
+    renderFiles();
+  </script>
+</body>
+</html>
